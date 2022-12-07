@@ -254,11 +254,14 @@ namespace HealthV2
 			var totalMoles = breathGasMix.Moles * percentageCanTake;
 
 
-			lock (breathGasMix.GasData.GasesArray) //no Double lock
+			lock (breathGasMix.GasData.GetGasesArray) //no Double lock
 			{
-				foreach (var gasValues in breathGasMix.GasData.GasesArray)
+				for (var index = 0; index < breathGasMix.GasData.GetGasesArray.Length; index++)
 				{
-					var gas = gasValues.GasSO;
+					var gasValues = breathGasMix.GasData.GetGasesArray[index];
+					var gas = breathGasMix.GetGasSO(index);
+
+
 					if (Gas.GasToReagent.TryGetValue(gas, out var gasReagent) == false) continue;
 
 					// n = PV/RT
@@ -271,7 +274,7 @@ namespace HealthV2
 					{
 						var percentageMultiplier = (gasMoles / (totalMoles));
 						molesRecieved = RelatedPart.bloodType.GetSpecialGasCapacity(blood) * percentageMultiplier *
-										pressureMultiplier;
+						                pressureMultiplier;
 					}
 					else if (gasMoles != 0)
 					{

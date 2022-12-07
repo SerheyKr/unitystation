@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Objects.Wallmounts;
+using ScriptableObjects.Atmospherics;
 using Shared.Managers;
 using Systems.Pipes;
 using UnityEngine;
@@ -47,6 +48,7 @@ namespace Systems.Atmospherics
 
 		private void OnEnable()
 		{
+			GasesSingleton.Instance.SetUp();
 			EventManager.AddHandler(Event.PostRoundStarted, OnPostRoundStart);
 		}
 
@@ -58,6 +60,8 @@ namespace Systems.Atmospherics
 
 		private void OnPostRoundStart()
 		{
+
+
 			if (CustomNetworkManager.IsServer == false) return;
 
 			atmosThread.StartThread();

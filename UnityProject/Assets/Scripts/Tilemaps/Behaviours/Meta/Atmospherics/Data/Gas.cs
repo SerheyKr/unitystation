@@ -5,6 +5,7 @@ using Chemistry;
 using ScriptableObjects.Atmospherics;
 using TileManagement;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Systems.Atmospherics
 {
@@ -42,35 +43,48 @@ namespace Systems.Atmospherics
 	[Serializable]
 	public class GasData
 	{
+
 		//Used for quick iteration
-		public List<GasValues> GasesArray = new List<GasValues>();
+		[FormerlySerializedAs("GasesArray")]
+		public List<GasValues> EditorGasesArray = new List<GasValues>();
 
-		//Used for fast look up for specific gases
-		public Dictionary<int, GasValues> GasesDict = new Dictionary<int, GasValues>();
 
-		public void RegenerateDict()
+		[HideInInspector]
+		public float[] GetGasesArray
 		{
-			lock (GasesArray)
+			get
 			{
-				GasesDict.Clear();
-				for (int i = 0; i < GasesArray.Count; i++)
+				if (EditorGasesArray != null)
 				{
-					var value = GasesArray[i];
-					GasesDict.Add(value.GasSO, value);
+					foreach (var GV in EditorGasesArray)
+					{
+						if (GV.GasSO == null || GV.Moles == 0) continue;
+						if (GV.GasSO >= GasesArray.Length)
+						{
+							Array.Resize(ref GasesArray,  GV.GasSO+1);
+						}
+						GasesArray[GV.GasSO] = GV.Moles;
+					}
+
+					EditorGasesArray = null;
 				}
+				return GasesArray;
+			}
+			set
+			{
+				GasesArray = value;
 			}
 		}
 
+		public float[] GasesArray = Array.Empty<float>();
 		public void Clear()
 		{
-			lock (GasesArray)
+			lock (GetGasesArray)
 			{
-				for (int i = 0; i < GasesArray.Count; i++)
+				for (int i = 0; i < GetGasesArray.Length; i++)
 				{
-					GasesArray[i].Pool();
+					GetGasesArray[i] = 0;
 				}
-				GasesArray.Clear();
-				GasesDict.Clear();
 			}
 		}
 	}

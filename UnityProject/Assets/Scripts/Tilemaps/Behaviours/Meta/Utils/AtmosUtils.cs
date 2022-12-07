@@ -40,7 +40,12 @@ namespace Systems.Atmospherics
 						return new GasValuesList();
 					}
 
-					QEntry.List.Clear();
+
+					for (int i = 0; i < QEntry.List.Length; i++)
+					{
+						QEntry.List[i] = 0;
+					}
+
 
 					return QEntry;
 				}
@@ -51,15 +56,14 @@ namespace Systems.Atmospherics
 
 		public class GasValuesList
 		{
-			public List<GasValues> List = new List<GasValues>();
+			public float[] List = new float[0];
 
 			public void Pool()
 			{
-				for (int i = 0; i < List.Count; i++)
+				for (int i = 0; i < List.Length; i++)
 				{
-					List[i].Pool();
+					List[i] = 0;
 				}
-				List.Clear();
 				lock (PooledGasValuesLists)
 				{
 					PooledGasValuesLists.Add(this);
@@ -72,14 +76,18 @@ namespace Systems.Atmospherics
 		{
 			var List = GetGasValuesList();
 
-			lock (GasData.GasesArray) //no Double lock
+
+
+			lock (GasData.GetGasesArray) //no Double lock
 			{
-				foreach (var gv in GasData.GasesArray)
+				if (GasData.GetGasesArray.Length > List.List.Length)
 				{
-					var Newgas = AtmosUtils.GetGasValues();
-					Newgas.Moles = gv.Moles;
-					Newgas.GasSO = gv.GasSO;
-					List.List.Add(Newgas);
+					Array.Resize(ref List.List, GasData.GetGasesArray.Length);
+				}
+
+				for (var index = 0; index < GasData.GetGasesArray.Length; index++)
+				{
+					List.List[index] = GasData.GetGasesArray[index];
 				}
 			}
 
@@ -137,11 +145,11 @@ namespace Systems.Atmospherics
 		{
 			var total = 0f;
 
-			lock (data.GasesArray) //no Double lock
+			lock (data.GetGasesArray) //no Double lock
 			{
-				foreach (var gas in data.GasesArray)
+				foreach (var gas in data.GetGasesArray)
 				{
-					total += gas.Moles;
+					total += gas;
 				}
 			}
 
@@ -154,7 +162,21 @@ namespace Systems.Atmospherics
 		/// </summary>
 		public static bool HasGasType(this GasData data, GasSO gasType)
 		{
-			return data.GasesDict.ContainsKey(gasType);
+			var Index = gasType.thisIndex;
+			if (Index >= data.GetGasesArray.Length )
+			{
+				return false;
+
+			}
+			else
+			{
+				if (data.GetGasesArray[Index] > 0)
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		/// <summary>
@@ -162,7 +184,7 @@ namespace Systems.Atmospherics
 		/// </summary>
 		public static float GetGasMoles(this GasData data, GasSO gasType)
 		{
-			return GetGasType(data, gasType)?.Moles ?? 0;
+			return GetGasType(data, gasType);
 		}
 
 		/// <summary>
@@ -170,7 +192,7 @@ namespace Systems.Atmospherics
 		/// </summary>
 		public static float GetGasMoles(this GasData data, int gasType)
 		{
-			return GetGasType(data, gasType)?.Moles ?? 0;
+			return GetGasType(data, gasType);
 		}
 
 		/// <summary>
@@ -184,41 +206,47 @@ namespace Systems.Atmospherics
 		/// <summary>
 		/// Gets a specific gas from the gas array, returns null if gas isn't in mix
 		/// </summary>
-		public static void GetGasType(this GasData data, GasSO gasType, out GasValues gasData)
+		public static void GetGasType(this GasData data, GasSO gasType, out float gasData)
 		{
+
 			gasData = GetGasType(data, gasType);
 		}
 
 		/// <summary>
 		/// Gets a specific gas from the gas array, returns null if gas isn't in mix
 		/// </summary>
-		public static GasValues GetGasType(this GasData data, GasSO gasType)
+		public static float GetGasType(this GasData data, GasSO gasType)
 		{
-			if (data.GasesDict.TryGetValue(gasType, out var value))
-			{
-				return value;
-			}
+			return data.GetGasType(gasType.thisIndex);
 
-			return null;
+
 		}
 
 		/// <summary>
 		/// Gets a specific gas from the gas array, returns null if gas isn't in mix
 		/// </summary>
-		public static GasValues GetGasType(this GasData data, int gasType)
+		public static float GetGasType(this GasData data, int gasType)
 		{
-			if (data.GasesDict.TryGetValue(gasType, out var value))
+			var Index = gasType;
+			if (Index >= data.GetGasesArray.Length )
 			{
-				return value;
+				return 0;
 			}
-
-			return null;
+			else
+			{
+				return data.GetGasesArray[Index];
+			}
 		}
 
 		/// <summary>
 		/// Adds/Removes moles for a specific gas in the gas data
 		/// </summary>
 		public static void ChangeMoles(this GasData data, GasSO gasType, float moles)
+		{
+			InternalSetMoles(data, gasType, moles, true);
+		}
+
+		public static void ChangeMoles(this GasData data, int gasType, float moles)
 		{
 			InternalSetMoles(data, gasType, moles, true);
 		}
@@ -231,67 +259,59 @@ namespace Systems.Atmospherics
 			InternalSetMoles(data, gasType, moles, false);
 		}
 
-		private static void InternalSetMoles(GasData data, GasSO gasType, float moles, bool isChange)
+		/// <summary>
+		/// Sets moles for a specific gas to a specific value in the gas data
+		/// </summary>
+		public static void SetMoles(this GasData data, int gasType, float moles)
 		{
-			lock (data.GasesArray) //Because it gets the gas and it could be added in between this
+			InternalSetMoles(data, gasType, moles, false);
+		}
+
+		private static void InternalSetMoles(GasData data, int gasType, float moles, bool isChange)
+		{
+			lock (data.GetGasesArray) //Because it gets the gas and it could be added in between this
 			{
 				//Try to get gas value if already inside mix
-				GetGasType(data, gasType, out var gas);
+				//GetGasType(data, gasType, out var gas);
+				var Index = gasType;
 
-				if (gas != null)
+
+				if (gasType >= data.GetGasesArray.Length)
 				{
-					if (isChange)
-					{
-						gas.Moles += moles;
-					}
-					else
-					{
-						gas.Moles = moles;
-					}
 
-					//Remove gas from mix if less than threshold
-					if (gas.Moles <= AtmosConstants.MinPressureDifference)
-					{
-						data.RemoveGasType(gasType);
-					}
+					//Dont add new data for negative moles
+					if (Math.Sign(moles) == -1) return;
 
-					return;
+					//Dont add if approx 0 or below threshold
+					if (moles is 0 or <= AtmosConstants.MinPressureDifference) return;
+					Array.Resize(ref data.GasesArray,  Index+1);
 				}
 
-				//Gas isn't inside mix so we'll add it
+				if (isChange)
+				{
+					data.GetGasesArray[Index] += moles;
+				}
+				else
+				{
+					data.GetGasesArray[Index] = moles;
+				}
 
-				//Dont add new data for negative moles
-				if (Math.Sign(moles) == -1) return;
-
-				//Dont add if approx 0 or below threshold
-				if (moles.Approx(0) || moles <= AtmosConstants.MinPressureDifference) return;
-
-				var newValues = GetGasValues();
-				newValues.Moles = moles;
-				newValues.GasSO = gasType;
-
-				data.GasesArray.Add(newValues);
-				data.GasesDict.Add(gasType, newValues);
+				//Remove gas from mix if less than threshold
+				if (data.GetGasesArray[Index] <= AtmosConstants.MinPressureDifference)
+				{
+					data.RemoveGasType(gasType);
+				}
 			}
 		}
 
 		/// <summary>
 		/// Removes a specific gas type
 		/// </summary>
-		public static void RemoveGasType(this GasData data, GasSO gasType)
+		public static void RemoveGasType(this GasData data, int gasType)
 		{
-			lock (data.GasesArray) //no Double lock
+			lock (data.GetGasesArray) //no Double lock
 			{
-				for (int i = data.GasesArray.Count - 1; i >= 0; i--)
-				{
-					if (data.GasesArray[i].GasSO == gasType)
-					{
-						data.GasesDict.Remove(gasType);
-						data.GasesArray[i].Pool();
-						data.GasesArray.RemoveAt(i);
-						return;
-					}
-				}
+				data.GetGasesArray[gasType] = 0;
 			}
 		}
 
@@ -305,14 +325,12 @@ namespace Systems.Atmospherics
 
 			var List = CopyGasArray(oldData);
 
-			foreach (var value in List.List)
+			for (var index = 0; index < List.List.Length; index++)
 			{
-				newGasData.SetMoles(value.GasSO, value.Moles);
+				newGasData.SetMoles(index, List.List[index]);
 			}
 
 			List.Pool();
-
-			newGasData.RegenerateDict();
 
 			return newGasData;
 		}
@@ -328,14 +346,12 @@ namespace Systems.Atmospherics
 
 			var List = CopyGasArray(oldData);
 
-			foreach (var value in List.List)
+			for (var index = 0; index < List.List.Length; index++)
 			{
-				CopyTo.SetMoles(value.GasSO, value.Moles);
+				CopyTo.SetMoles(index, List.List[index]);
 			}
 
 			List.Pool();
-
-			CopyTo.RegenerateDict();
 
 			return CopyTo;
 		}

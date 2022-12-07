@@ -382,12 +382,15 @@ namespace Systems.Cargo
 			{
 				var stringBuilder = new StringBuilder(export.ExportMessage);
 
-				lock (gasContainer.GasMix.GasesArray) //no Double lock
+				lock (gasContainer.GasMix.GetGasesArray) //no Double lock
 				{
-					foreach (var gas in gasContainer.GasMix.GasesArray)  //doesn't appear to modify list while iterating
+					for (var index = 0; index < gasContainer.GasMix.GetGasesArray.Length; index++)
 					{
-						int gasValue = (int)gas.Moles * gas.GasSO.ExportPrice;
-						stringBuilder.AppendLine($"Exported {gas.Moles} moles of {gas.GasSO.Name} for {gasValue} credits");
+						var gasAmount = gasContainer.GasMix.GetGasesArray[index];
+						var gas = gasContainer.GasMix.GetGasSO(index);
+						int gasValue = (int) gas * gasContainer.GasMix.GetGasSO(index).ExportPrice;
+						stringBuilder.AppendLine(
+							$"Exported {gasAmount} moles of {gas.Name} for {gasValue} credits");
 						export.TotalValue += gasValue;
 						Credits += gasValue;
 					}

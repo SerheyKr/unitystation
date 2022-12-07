@@ -151,14 +151,16 @@ namespace Objects.Atmospherics
 
 			float scrubbableMolesAvailable = 0;
 
-			lock (metaNode.GasMix.GasesArray) //no Double lock
+			lock (metaNode.GasMix.GetGasesArray) //no Double lock
 			{
-				foreach (GasValues gas in metaNode.GasMix.GasesArray) //doesn't appear to modify list while iterating
+				for (var index = 0; index < metaNode.GasMix.GetGasesArray.Length; index++)
 				{
-					if (FilteredGases.Contains(gas.GasSO))
+					var Gasso = metaNode.GasMix.GetGasSO(index);
+					var gas = metaNode.GasMix.GetGasesArray[index];
+					if (FilteredGases.Contains(Gasso))
 					{
-						var molesRemoved = gas.Moles * percentageRemoved;
-						scrubbingGasMoles[gas.GasSO] = molesRemoved;
+						var molesRemoved = Gasso * percentageRemoved;
+						scrubbingGasMoles[Gasso] = molesRemoved;
 						scrubbableMolesAvailable += molesRemoved;
 					}
 				}

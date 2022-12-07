@@ -14,6 +14,9 @@ namespace ScriptableObjects.Atmospherics
 		private readonly Dictionary<int, GasSO> gases = new  Dictionary<int, GasSO>();
 		public Dictionary<int, GasSO> Gases => gases;
 
+		private GasSO[] gasesArryu = new GasSO[0];
+		public GasSO[] GasesArryu => gasesArryu;
+
 		private readonly Dictionary<Reagent, GasSO> reagentToGas = new  Dictionary<Reagent, GasSO>();
 		public Dictionary<Reagent, GasSO> ReagentToGas => reagentToGas;
 
@@ -74,10 +77,18 @@ namespace ScriptableObjects.Atmospherics
 		[field: SerializeField]
 		public GasSO CarbonMonoxide { get; private set; }
 
-		private void OnEnable()
+		private bool Initialised = false;
+
+
+		public void SetUp()
 		{
-			SetUpGases();
-			GasReactions.SetUpReactions();
+			if (Initialised == false)
+			{
+				SetUpGases();
+				GasReactions.SetUpReactions();
+				Initialised = true;
+			}
+
 		}
 
 		private void SetUpGases()
@@ -112,6 +123,8 @@ namespace ScriptableObjects.Atmospherics
 			//Auto make the index based on gases count
 			so.SetIndex(gases.Count);
 			gases.Add(gases.Count, so);
+			Array.Resize(ref gasesArryu, gasesArryu.Length + 1);
+			gasesArryu[so.thisIndex] = so;
 
 			if (so.AssociatedReagent == null)
 			{

@@ -189,10 +189,9 @@ namespace Objects.Atmospherics
 
 				var List = AtmosUtils.CopyGasArray(GasMix.GasData);
 
-				for (int i = List.List.Count - 1; i >= 0; i--)
+				for (int i = List.List.Length - 1; i >= 0; i--)
 				{
-					var gas = GasMix.GasesArray[i];
-					StoredGasMix.GasData.SetMoles(gas.GasSO, gas.Moles);
+					StoredGasMix.GasData.SetMoles(i, GasMix.GetMoles(i));
 				}
 
 				List.Pool();

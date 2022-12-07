@@ -108,8 +108,12 @@ namespace Core.Threading
 			if (threadMode == ThreadMode.Threaded)
 			{
 				workingThread = new Thread (ThreadLoop);
+				midTick = false;
+				running = true;
 				workingThread.Start();
 				currentThreads.Add(this);
+
+
 				Logger.LogFormat("<b>{0}</b> Started", Category.Threading, GetType().Name);
 			}
 			else if (threadMode == ThreadMode.MainThread)

@@ -104,12 +104,11 @@ namespace Systems.Pipes
 			mix.Add(mixAndVolume.mix);
 
 			var newOne = new GasData();
-			lock (gasMix.GasesArray) //is ok is new GasData
+			lock (gasMix.GetGasesArray) //is ok is new GasData
 			{
-				for (int i = gasMix.GasesArray.Count - 1; i >= 0; i--)
+				for (int i = gasMix.GetGasesArray.Length - 1; i >= 0; i--)
 				{
-					var gasData = gasMix.GasesArray[i];
-					newOne.SetMoles(gasData.GasSO, gasMix.GasData.GetGasMoles(gasData.GasSO) + mixAndVolume.gasMix.GasData.GetGasMoles(gasData.GasSO));
+					newOne.SetMoles(i, gasMix.GasData.GetGasMoles(i) + mixAndVolume.gasMix.GasData.GetGasMoles(i));
 				}
 			}
 
@@ -139,14 +138,14 @@ namespace Systems.Pipes
 			var newOne = new GasData();
 			var removeNewOne = new GasData();
 
-			lock (gasMix.GasesArray) //is ok is new GasData
+			lock (gasMix.GetGasesArray) //is ok is new GasData
 			{
-				for (int i =  gasMix.GasesArray.Count - 1; i >= 0; i--)
+				for (int i =  gasMix.GetGasesArray.Length - 1; i >= 0; i--)
 				{
-					var gasData = gasMix.GasesArray[i];
-					var moles = gasMix.GasData.GetGasMoles(gasData.GasSO);
-					removeNewOne.SetMoles(gasData.GasSO, moles * percentage);
-					newOne.SetMoles(gasData.GasSO, moles * (1 - percentage));
+					var gasData = gasMix.GetGasesArray[i];
+					var moles = gasMix.GasData.GetGasMoles(i);
+					removeNewOne.SetMoles(i, moles * percentage);
+					newOne.SetMoles(i, moles * (1 - percentage));
 				}
 			}
 
@@ -173,12 +172,12 @@ namespace Systems.Pipes
 			mix.Divide(divideAmount);
 
 			var newOne = new GasData();
-			lock (gasMix.GasesArray) //is ok is new GasData
+			lock (gasMix.GetGasesArray) //is ok is new GasData
 			{
-				for (int i = gasMix.GasesArray.Count - 1; i >= 0; i--)
+				for (int i = gasMix.GetGasesArray.Length - 1; i >= 0; i--)
 				{
-					var gasData = gasMix.GasesArray[i];
-					newOne.SetMoles(gasData.GasSO, gasMix.GasData.GetGasMoles(gasData.GasSO) / divideAmount);
+					var gasData = gasMix.GetGasesArray[i];
+					newOne.SetMoles(i, gasMix.GasData.GetGasMoles(i) / divideAmount);
 				}
 
 			}
@@ -197,12 +196,12 @@ namespace Systems.Pipes
 			mix.Multiply(multiplyAmount);
 
 			var newOne = new GasData();
-			lock (gasMix.GasesArray)  //is ok is new GasData
+			lock (gasMix.GetGasesArray)  //is ok is new GasData
 			{
-				for (int i = gasMix.GasesArray.Count - 1; i >= 0; i--)
+				for (int i = gasMix.GetGasesArray.Length - 1; i >= 0; i--)
 				{
-					var gasData = gasMix.GasesArray[i];
-					newOne.SetMoles(gasData.GasSO, gasMix.GasData.GetGasMoles(gasData.GasSO) * multiplyAmount);
+					var gasData = gasMix.GetGasesArray[i];
+					newOne.SetMoles(i, gasMix.GasData.GetGasMoles(i) * multiplyAmount);
 				}
 			}
 
@@ -417,9 +416,10 @@ namespace Systems.Pipes
 		public override string ToString()
 		{
 			string Returnstring = "";
-			foreach (var gv in gasMix.GasData.GasesArray)
+			for (var i = 0; i < gasMix.GasData.GetGasesArray.Length; i++)
 			{
-				Returnstring += $" Name : {gv.GasSO.Name} Amount : {gv.Moles}";
+				var gv = gasMix.GasData.GetGasesArray[i];
+				Returnstring += $" Name : {gasMix.GetGasSO(i).Name} Amount : {gv}";
 			}
 
 			return $"Volume > {Volume} Mix > {mix} gasMix > {gasMix.ToString()} gases > " + Returnstring;

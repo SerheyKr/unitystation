@@ -57,7 +57,7 @@ namespace Systems.Atmospherics
 				if (updateList.TryDequeue(out MetaDataNode node))
 				{
 					if(node.Exists == false) continue;
-					
+
 					//Wait for initial room set up as it is spread out over multiple frames
 					if(node.MetaDataSystem.SetUpDone == false) continue;
 
@@ -182,12 +182,12 @@ namespace Systems.Atmospherics
 			meanGasMix.Volume /= targetCount; //Note: this assumes the volume of all tiles are the same
 
 
-			lock (meanGasMix.GasesArray) //no Double lock
+			lock (meanGasMix.GetGasesArray) //no Double lock
 			{
-				for (int i = meanGasMix.GasesArray.Count - 1; i >= 0; i--)
+				for (int i = meanGasMix.GetGasesArray.Length - 1; i >= 0; i--)
 				{
-					var gasData = meanGasMix.GasesArray[i];
-					meanGasMix.GasData.SetMoles(gasData.GasSO, meanGasMix.GasData.GetGasMoles(gasData.GasSO) / targetCount);
+					var GasSO = meanGasMix.GetGasSO(i);
+					meanGasMix.GasData.SetMoles(GasSO, meanGasMix.GasData.GetGasMoles(GasSO) / targetCount);
 				}
 			}
 		}
@@ -248,13 +248,13 @@ namespace Systems.Atmospherics
 				//Only need to check if false
 				if (result == false)
 				{
-					lock (neighbor.GasMix.GasesArray) //no Double lock
+					lock (neighbor.GasMix.GetGasesArray) //no Double lock
 					{
-						for (int j = node.GasMix.GasesArray.Count - 1; j >= 0; j--)
+						for (int j = node.GasMix.GetGasesArray.Length - 1; j >= 0; j--)
 						{
-							var gas = node.GasMix.GasesArray[j];
-							float moles = node.GasMix.GasData.GetGasMoles(gas.GasSO);
-							float molesNeighbor = neighbor.GasMix.GasData.GetGasMoles(gas.GasSO);
+							var gas = node.GasMix.GetGasesArray[j];
+							float moles = gas;
+							float molesNeighbor = neighbor.GasMix.GetMoles(j);
 
 							if (Mathf.Abs(moles - molesNeighbor) > AtmosConstants.MinPressureDifference)
 							{
@@ -271,12 +271,13 @@ namespace Systems.Atmospherics
 				//Only need to check if false
 				if (result == false)
 				{
-					lock (neighbor.GasMix.GasesArray) //no Double lock
+					lock (neighbor.GasMix.GetGasesArray) //no Double lock
 					{
-						foreach (var gas in neighbor.GasMix.GasesArray) //doesn't appear to modify list while iterating
+						for (var index = 0; index < neighbor.GasMix.GetGasesArray.Length; index++)
 						{
-							float moles = node.GasMix.GasData.GetGasMoles(gas.GasSO);
-							float molesNeighbor = neighbor.GasMix.GasData.GetGasMoles(gas.GasSO);
+							var gas = neighbor.GasMix.GetGasesArray[index];
+							float moles = gas;
+							float molesNeighbor = neighbor.GasMix.GasData.GetGasesArray[index];
 
 							if (Mathf.Abs(moles - molesNeighbor) > AtmosConstants.MinPressureDifference)
 							{
@@ -461,16 +462,17 @@ namespace Systems.Atmospherics
 		//If needed, sends them to a queue in ReactionManager so that main thread will apply them
 		public static void GasVisualEffects(MetaDataNode node)
 		{
-			foreach (var gasData in node.GasMix.GasesArray) //doesn't appear to modify list while iterating
+			for (var index = 0; index < node.GasMix.GetGasesArray.Length; index++)
 			{
-				var gas = gasData.GasSO;
-				if(gas.HasOverlay == false) continue;
+				var gas = node.GasMix.GetGasSO(index);
+				//var gas = gasData; // node.GasMix.GetGasSO() gasData.GasSO;
+				if (gas.HasOverlay == false) continue;
 
 				var gasAmount = node.GasMix.GetMoles(gas);
 
-				if(gasAmount > gas.MinMolesToSee)
+				if (gasAmount > gas.MinMolesToSee)
 				{
-					if(node.GasOverlayData.Contains(gas)) continue;
+					if (node.GasOverlayData.Contains(gas)) continue;
 
 					node.AddGasOverlay(gas);
 
@@ -486,7 +488,7 @@ namespace Systems.Atmospherics
 				}
 				else
 				{
-					if(node.GasOverlayData.Contains(gas) == false) continue;
+					if (node.GasOverlayData.Contains(gas) == false) continue;
 
 					node.RemoveGasOverlay(gas);
 
@@ -499,7 +501,8 @@ namespace Systems.Atmospherics
 						continue;
 					}
 
-					node.PositionMatrix.MetaTileMap.RemoveOverlaysOfType(node.LocalPosition, LayerType.Effects, gas.OverlayTile.OverlayType);
+					node.PositionMatrix.MetaTileMap.RemoveOverlaysOfType(node.LocalPosition, LayerType.Effects,
+						gas.OverlayTile.OverlayType);
 				}
 			}
 		}

@@ -42,6 +42,7 @@ namespace ScriptableObjects.Atmospherics
 		//Doesnt need to be public as GasSO is turned into index automatically when needed, see below
 		private int Index;
 
+		public int thisIndex => Index;
 		private void OnEnable()
 		{
 			HasOverlay = OverlayTile != null;
@@ -49,12 +50,46 @@ namespace ScriptableObjects.Atmospherics
 
 		public static implicit operator int(GasSO gas)
 		{
+			if (gas == null)
+			{
+				return 0;
+			}
 			return gas.Index;
 		}
 
 		public void SetIndex(int newIndex)
 		{
 			Index = newIndex;
+		}
+
+
+		public bool Equals(GasSO other)
+		{
+			if (other.Index == Index)
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		public static bool operator ==(GasSO obj1, GasSO obj2)
+		{
+			if (obj1 is null || obj2 is null)
+			{
+				return obj1 is null && obj2 is null;
+			}
+			else
+			{
+				return obj1.Equals(obj2);
+			}
+		}
+
+		public static bool operator !=(GasSO obj1, GasSO obj2)
+		{
+			return !(obj1 == obj2);
 		}
 	}
 }

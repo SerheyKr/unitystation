@@ -31,11 +31,12 @@ namespace Objects.Atmospherics
 
 			Pressure = mix.Pressure;
 			Temperature = mix.Temperature;
-			lock (mix.GasesArray) //no Double lock
+			lock (mix.GetGasesArray) //no Double lock
 			{
-				foreach (GasValues gas in mix.GasesArray)  //doesn't appear to modify list while iterating
+				for (var index = 0; index < mix.GetGasesArray.Length; index++)
 				{
-					GasMoles.Add(gas.GasSO, gas.Moles);
+
+					GasMoles.Add(mix.GetGasSO(index), mix.GetGasesArray[index]);
 				}
 			}
 

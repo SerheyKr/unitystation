@@ -33,11 +33,11 @@ namespace Systems.Atmospherics
 
 			var gasPower = 0f;
 
-			lock ( gasMix.GasesArray) //no Double lock
+			lock ( gasMix.GetGasesArray) //no Double lock
 			{
-				foreach (var gas in gasMix.GasesArray)  //doesn't appear to modify list while iterating
+				for (var index = 0; index < gasMix.GetGasesArray.Length; index++)
 				{
-					gasPower += gas.GasSO.FusionPower * gas.Moles;
+					gasPower += gasMix.GetGasSO(index).FusionPower *  gasMix.GetGasesArray[index];
 				}
 			}
 
