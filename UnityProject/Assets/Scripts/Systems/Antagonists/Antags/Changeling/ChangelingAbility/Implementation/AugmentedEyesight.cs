@@ -2,7 +2,6 @@ using CameraEffects;
 using HealthV2;
 using Items.Implants.Organs;
 using Mirror;
-using NaughtyAttributes;
 using UnityEngine;
 
 namespace Changeling
